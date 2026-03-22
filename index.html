@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Keyboard Language Fixer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* ─── CSS Variables ─── */
+    :root {
+      --bg:           #f0ece4;
+      --bg2:          #e5dfd4;
+      --surface:      #faf8f4;
+      --surface2:     #f2ede6;
+      --border:       #d6cfc3;
+      --text:         #1a1714;
+      --text-muted:   #7a7168;
+      --accent:       #c8470a;
+      --accent-light: #f5d7c8;
+      --accent2:      #2a6b4f;
+      --accent2-light:#c4ddd4;
+      --shadow:       rgba(26, 23, 20, 0.10);
+      --shadow-hard:  rgba(26, 23, 20, 0.22);
+      --radius:       16px;
+      --radius-sm:    10px;
+      --transition:   0.22s cubic-bezier(.4,0,.2,1);
+    }
+
+    [data-theme="dark"] {
+      --bg:           #13100e;
+      --bg2:          #1c1814;
+      --surface:      #201c18;
+      --surface2:     #2b2620;
+      --border:       #3a342c;
+      --text:         #f0ece4;
+      --text-muted:   #8a8078;
+      --accent:       #e8633a;
+      --accent-light: #3d1e10;
+      --accent2:      #4caf82;
+      --accent2-light:#0e2c1e;
+      --shadow:       rgba(0, 0, 0, 0.35);
+      --shadow-hard:  rgba(0, 0, 0, 0.55);
+    }
+
+    /* ─── Reset & Base ─── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Tajawal', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background var(--transition), color var(--transition);
+      overflow-x: hidden;
+    }
+
+    /* ─── Background Texture ─── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(circle at 15% 20%, rgba(200,71,10,0.06) 0%, transparent 50%),
+        radial-gradient(circle at 85% 80%, rgba(42,107,79,0.06) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ─── Header ─── */
+    header {
+      position: relative;
+      z-index: 10;
+      padding: 28px 40px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      backdrop-filter: blur(12px);
+      transition: background var(--transition), border-color var(--transition);
+    }
+
+    .logo-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .logo-title {
+      font-family: 'Space Mono', monospace;
+      font-size: clamp(1.1rem, 3vw, 1.5rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .logo-title span {
+      color: var(--accent);
+    }
+
+    .logo-sub {
+      font-size: 0.78rem;
+      font-weight: 400;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      font-family: 'Tajawal', sans-serif;
+      direction: rtl;
+    }
+
+    /* ─── Dark Mode Toggle ─── */
+    .theme-btn {
+      width: 48px;
+      height: 28px;
+      border-radius: 999px;
+      background: var(--surface2);
+      border: 2px solid var(--border);
+      cursor: pointer;
+      position: relative;
+      transition: background var(--transition), border-color var(--transition);
+      flex-shrink: 0;
+    }
+
+    .theme-btn::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--accent);
+      transition: transform var(--transition), background var(--transition);
+    }
+
+    [data-theme="dark"] .theme-btn::after {
+      transform: translateX(-20px);
+    }
+
+    .theme-icon {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 11px;
+      pointer-events: none;
+      line-height: 1;
+    }
+
+    .theme-icon.sun { right: 5px; }
+    .theme-icon.moon { left: 5px; }
+
+    /* ─── Main Layout ─── */
+    main {
+      flex: 1;
+      position: relative;
+      z-index: 1;
+      padding: 48px 40px;
+      max-width: 1100px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* ─── Detection Badge ─── */
+    .detect-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 16px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+      transition: all var(--transition);
+      border: 1.5px solid transparent;
+    }
+
+    .detect-badge.ar {
+      background: var(--accent2-light);
+      color: var(--accent2);
+      border-color: var(--accent2);
+    }
+
+    .detect-badge.en {
+      background: var(--accent-light);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .detect-badge.neutral {
+      background: var(--surface2);
+      color: var(--text-muted);
+      border-color: var(--border);
+    }
+
+    .detect-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.7); }
+    }
+
+    /* ─── Panels Grid ─── */
+    .panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 720px) {
+      .panels { grid-template-columns: 1fr; }
+      main { padding: 32px 20px; }
+      header { padding: 20px; }
+    }
+
+    /* ─── Card ─── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 2px 12px var(--shadow);
+      transition: background var(--transition), border-color var(--transition), box-shadow var(--transition);
+    }
+
+    .card:hover {
+      box-shadow: 0 6px 28px var(--shadow-hard);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+      transition: background var(--transition), border-color var(--transition);
+    }
+
+    .card-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-label-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .dot-input  { background: var(--accent); }
+    .dot-output { background: var(--accent2); }
+
+    /* ─── Textarea & Output ─── */
+    textarea {
+      width: 100%;
+      min-height: 260px;
+      padding: 20px;
+      background: transparent;
+      border: none;
+      outline: none;
+      resize: vertical;
+      font-family: 'Space Mono', monospace;
+      font-size: 1rem;
+      color: var(--text);
+      line-height: 1.8;
+      direction: ltr;
+      transition: color var(--transition);
+    }
+
+    textarea::placeholder {
+      color: var(--text-muted);
+      font-family: 'Tajawal', sans-serif;
+      font-size: 0.95rem;
+    }
+
+    .output-box {
+      min-height: 260px;
+      padding: 20px;
+      font-family: 'Tajawal', sans-serif;
+      font-size: 1.05rem;
+      line-height: 1.9;
+      color: var(--text);
+      direction: rtl;
+      white-space: pre-wrap;
+      word-break: break-word;
+      transition: color var(--transition);
+    }
+
+    .output-placeholder {
+      color: var(--text-muted);
+      font-style: italic;
+      font-size: 0.92rem;
+    }
+
+    /* ─── Button Bar ─── */
+    .btn-bar {
+      display: flex;
+      gap: 10px;
+      padding: 14px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--surface2);
+      transition: background var(--transition), border-color var(--transition);
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 18px;
+      border-radius: var(--radius-sm);
+      font-family: 'Tajawal', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1.5px solid transparent;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.12);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(200,71,10,0.35);
+    }
+
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--text-muted);
+      border-color: var(--border);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--text-muted);
+      color: var(--text);
+      transform: translateY(-1px);
+    }
+
+    .btn-copy {
+      background: var(--accent2-light);
+      color: var(--accent2);
+      border-color: var(--accent2);
+    }
+
+    .btn-copy:hover {
+      filter: brightness(1.08);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(42,107,79,0.25);
+    }
+
+    .btn-copy.copied {
+      background: var(--accent2);
+      color: #fff;
+    }
+
+    .btn:active { transform: translateY(0) scale(0.97); }
+
+    /* ─── Char Counter ─── */
+    .char-count {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      padding: 0 20px 12px;
+      text-align: left;
+      font-family: 'Space Mono', monospace;
+      transition: color var(--transition);
+    }
+
+    /* ─── Divider Arrow ─── */
+    .arrow-divider {
+      display: none;
+    }
+
+    @media (min-width: 721px) {
+      .arrow-divider {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #fff;
+        font-size: 1.1rem;
+        box-shadow: 0 4px 16px rgba(200,71,10,0.3);
+        z-index: 5;
+        pointer-events: none;
+      }
+
+      .panels { position: relative; }
+    }
+
+    /* ─── Keyboard Hint ─── */
+    .keyboard-hint {
+      margin-top: 28px;
+      padding: 18px 24px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      transition: background var(--transition), border-color var(--transition);
+    }
+
+    .hint-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hint-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .hint-key {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      border-radius: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      font-size: 0.82rem;
+      transition: background var(--transition), border-color var(--transition);
+    }
+
+    .hint-key .en-key {
+      font-family: 'Space Mono', monospace;
+      font-weight: 700;
+      color: var(--accent);
+      font-size: 0.85rem;
+    }
+
+    .hint-key .arrow {
+      color: var(--text-muted);
+      font-size: 0.7rem;
+    }
+
+    .hint-key .ar-key {
+      font-family: 'Tajawal', sans-serif;
+      font-weight: 700;
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+
+    /* ─── Footer ─── */
+    footer {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      padding: 22px 40px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      transition: background var(--transition), border-color var(--transition), color var(--transition);
+    }
+
+    footer strong {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    footer .heart { color: var(--accent); }
+
+    /* ─── Toast ─── */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--text);
+      color: var(--bg);
+      padding: 12px 24px;
+      border-radius: 999px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      font-family: 'Tajawal', sans-serif;
+      z-index: 999;
+      pointer-events: none;
+      transition: transform 0.35s cubic-bezier(.4,0,.2,1), opacity 0.35s;
+      opacity: 0;
+      white-space: nowrap;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* ─── Scrollbar ─── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+  </style>
+</head>
+<body>
+
+  <!-- ─── Header ─── -->
+  <header>
+    <div class="logo-wrap">
+      <div class="logo-title">Keyboard<span>.</span>Fixer</div>
+      <div class="logo-sub">محوّل لوحة المفاتيح — إنجليزي ← عربي</div>
+    </div>
+    <button class="theme-btn" id="themeBtn" title="تبديل الوضع">
+      <span class="theme-icon sun">☀</span>
+      <span class="theme-icon moon">☾</span>
+    </button>
+  </header>
+
+  <!-- ─── Main ─── -->
+  <main>
+
+    <!-- Detection Badge -->
+    <div class="detect-badge neutral" id="detectBadge">
+      <span class="detect-dot"></span>
+      <span id="detectText">انتظر الكتابة...</span>
+    </div>
+
+    <!-- Panels -->
+    <div class="panels" id="panels">
+
+      <!-- Arrow -->
+      <div class="arrow-divider" id="arrowDiv">⟵</div>
+
+      <!-- Input Card -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-label">
+            <span class="card-label-dot dot-input"></span>
+            النص المُدخل
+          </span>
+        </div>
+        <textarea
+          id="inputText"
+          placeholder="اكتب هنا... (مثال: lvdm لتحويلها إلى 'مرحبا')"
+          spellcheck="false"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+        ></textarea>
+        <div class="char-count" id="inputCount">0 حرف</div>
+        <div class="btn-bar">
+          <button class="btn btn-primary" id="convertBtn">⟵ تحويل</button>
+          <button class="btn btn-secondary" id="clearBtn">✕ مسح</button>
+        </div>
+      </div>
+
+      <!-- Output Card -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-label">
+            <span class="card-label-dot dot-output"></span>
+            النتيجة العربية
+          </span>
+        </div>
+        <div class="output-box" id="outputBox">
+          <span class="output-placeholder" id="outputPlaceholder">النتيجة ستظهر هنا...</span>
+        </div>
+        <div class="char-count" id="outputCount">0 حرف</div>
+        <div class="btn-bar">
+          <button class="btn btn-copy" id="copyBtn">⎘ نسخ</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Keyboard Hint -->
+    <div class="keyboard-hint" id="hintBox">
+      <div class="hint-title">🗝 خريطة لوحة المفاتيح — QWERTY ← عربي</div>
+      <div class="hint-grid" id="hintGrid"></div>
+    </div>
+
+  </main>
+
+  <!-- ─── Footer ─── -->
+  <footer>
+    <span class="heart">♥</span>
+    Developed by <strong>Mahmoud Hamdy</strong> — Keyboard Language Fixer © 2025
+  </footer>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ─── JavaScript ─── -->
+  <script>
+    /* ================================================================
+       MAPPING TABLE — QWERTY (English key) → Arabic letter
+       Based on standard Arabic keyboard layout
+    ================================================================ */
+    /*
+      الـ mapping الصح بناءً على لوحة المفاتيح العربية الحقيقية:
+      لما الكيبورد بتاعك بالإنجليزي بس اللغة عربية،
+      كل حرف إنجليزي بيتحول للحرف العربي اللي في نفس المكان.
+    */
+    const AR_MAP = {
+      /* الصف الأول - أرقام */
+      '1': '١', '2': '٢', '3': '٣', '4': '٤', '5': '٥',
+      '6': '٦', '7': '٧', '8': '٨', '9': '٩', '0': '٠',
+      /* الصف الأول - حروف QWERTY */
+      'q': 'ض', 'w': 'ص', 'e': 'ث', 'r': 'ق', 't': 'ف',
+      'y': 'غ', 'u': 'ع', 'i': 'ه', 'o': 'خ', 'p': 'ح',
+      '[': 'ج', ']': 'د', '\\': 'ذ',
+      /* الصف الثاني - حروف ASDF */
+      'a': 'ش', 's': 'س', 'd': 'ي', 'f': 'ب', 'g': 'ل',
+      'h': 'ا', 'j': 'ت', 'k': 'ن', 'l': 'م',
+      ';': 'ك', "'": 'ط',
+      /* الصف الثالث - حروف ZXCV */
+      'z': 'ئ', 'x': 'ء', 'c': 'ؤ', 'v': 'ر', 'b': 'لا',
+      'n': 'ى', 'm': 'ة', ',': 'و', '.': 'ز', '/': 'ظ',
+      /* Shift + أرقام */
+      '!': '!', '@': '@', '#': '#', '$': '$', '%': '%',
+      '^': '^', '&': '&', '*': '*', '(': ')', ')': '(',
+      /* Shift + حروف */
+      'Q': 'َ',  'W': 'ً',  'E': 'ُ',  'R': 'ٌ',  'T': 'لإ',
+      'Y': 'إ',  'U': '`',  'I': '÷',  'O': '×',  'P': '؛',
+      '{': '<',  '}': '>',  '|': '_',
+      'A': 'ِ',  'S': 'ٍ',  'D': ']',  'F': '[',  'G': 'لأ',
+      'H': 'أ',  'J': 'ـ',  'K': '،',  'L': '/',
+      ':': 'ك',  '"': 'ط',
+      'Z': '~',  'X': 'ْ',  'C': '}',  'V': '{',  'B': 'لآ',
+      'N': 'آ',  'M': "'",  '<': ',',  '>': '.',  '?': '؟',
+    };
+
+    /* ================================================================
+       UTILITY: Convert English-on-Arabic-keyboard text → Arabic
+    ================================================================ */
+    function convertToArabic(text) {
+      return text.split('').map(ch => {
+        if (ch === ' ' || ch === '\n' || ch === '\r' || ch === '\t') return ch;
+        return AR_MAP[ch] !== undefined ? AR_MAP[ch] : ch;
+      }).join('');
+    }
+
+    /* ================================================================
+       UTILITY: Detect language of text
+       Returns 'ar', 'en', or 'mixed'
+    ================================================================ */
+    function detectLanguage(text) {
+      const stripped = text.replace(/\s+/g, '');
+      if (!stripped) return 'none';
+      const arCount  = (text.match(/[\u0600-\u06FF]/g) || []).length;
+      const enCount  = (text.match(/[a-zA-Z]/g) || []).length;
+      if (arCount === 0 && enCount === 0) return 'none';
+      if (arCount > enCount * 1.5) return 'ar';
+      if (enCount > arCount * 1.5) return 'en';
+      return 'mixed';
+    }
+
+    /* ================================================================
+       DOM REFS
+    ================================================================ */
+    const inputEl      = document.getElementById('inputText');
+    const outputEl     = document.getElementById('outputBox');
+    const placeholder  = document.getElementById('outputPlaceholder');
+    const convertBtn   = document.getElementById('convertBtn');
+    const clearBtn     = document.getElementById('clearBtn');
+    const copyBtn      = document.getElementById('copyBtn');
+    const themeBtn     = document.getElementById('themeBtn');
+    const inputCount   = document.getElementById('inputCount');
+    const outputCount  = document.getElementById('outputCount');
+    const detectBadge  = document.getElementById('detectBadge');
+    const detectText   = document.getElementById('detectText');
+    const toast        = document.getElementById('toast');
+    const hintGrid     = document.getElementById('hintGrid');
+
+    /* ================================================================
+       RENDER KEYBOARD HINT
+    ================================================================ */
+    function renderHint() {
+      const pairs = [
+        ['q','ض'],['w','ص'],['e','ث'],['r','ق'],['t','ف'],
+        ['y','غ'],['u','ع'],['i','ه'],['o','خ'],['p','ح'],
+        ['a','ش'],['s','س'],['d','ي'],['f','ب'],['g','ل'],
+        ['h','ا'],['j','ت'],['k','ن'],['l','م'],[';','ك'],
+        ["'",'ط'],['z','ئ'],['x','ء'],['c','ؤ'],['v','ر'],
+        ['b','لا'],['n','ى'],['m','ة'],[',','و'],['.','ز'],
+        ['/','ظ'],['[','ج'],[']','د'],['\\','ذ'],
+      ];
+      hintGrid.innerHTML = pairs.map(([en, ar]) =>
+        `<div class="hint-key">
+          <span class="en-key">${en}</span>
+          <span class="arrow">→</span>
+          <span class="ar-key">${ar}</span>
+        </div>`
+      ).join('');
+    }
+
+    /* ================================================================
+       CORE: Perform conversion and update UI
+    ================================================================ */
+    function performConversion() {
+      const raw    = inputEl.value;
+      const lang   = detectLanguage(raw);
+      const result = convertToArabic(raw);
+
+      // Update detection badge
+      detectBadge.className = 'detect-badge';
+      if (lang === 'en') {
+        detectBadge.classList.add('en');
+        detectText.textContent = 'نص إنجليزي (على أساس كيبورد عربي) — جاري التحويل';
+      } else if (lang === 'ar') {
+        detectBadge.classList.add('ar');
+        detectText.textContent = 'نص عربي مكتوب بشكل صحيح بالفعل ✓';
+      } else if (lang === 'mixed') {
+        detectBadge.classList.add('en');
+        detectText.textContent = 'نص مختلط — جاري التحويل';
+      } else {
+        detectBadge.classList.add('neutral');
+        detectText.textContent = 'انتظر الكتابة...';
+      }
+
+      // Update char counts
+      inputCount.textContent  = `${raw.length} حرف`;
+      outputCount.textContent = `${result.length} حرف`;
+
+      // Update output
+      if (!raw.trim()) {
+        outputEl.innerHTML = '<span class="output-placeholder">النتيجة ستظهر هنا...</span>';
+      } else {
+        // Escape HTML to prevent injection, then set
+        const safe = result
+          .replace(/&/g,'&amp;')
+          .replace(/</g,'&lt;')
+          .replace(/>/g,'&gt;');
+        outputEl.innerHTML = safe;
+      }
+    }
+
+    /* ================================================================
+       EVENT: Live conversion on input
+    ================================================================ */
+    inputEl.addEventListener('input', performConversion);
+
+    /* ================================================================
+       EVENT: Convert button (manual trigger)
+    ================================================================ */
+    convertBtn.addEventListener('click', performConversion);
+
+    /* ================================================================
+       EVENT: Clear button
+    ================================================================ */
+    clearBtn.addEventListener('click', () => {
+      inputEl.value = '';
+      performConversion();
+      inputEl.focus();
+      showToast('تم المسح ✓');
+    });
+
+    /* ================================================================
+       EVENT: Copy button
+    ================================================================ */
+    copyBtn.addEventListener('click', () => {
+      const text = outputEl.textContent;
+      if (!text || outputEl.querySelector('.output-placeholder')) {
+        showToast('لا يوجد نص للنسخ!');
+        return;
+      }
+      navigator.clipboard.writeText(text).then(() => {
+        copyBtn.classList.add('copied');
+        copyBtn.textContent = '✓ تم النسخ';
+        showToast('تم النسخ إلى الحافظة ✓');
+        setTimeout(() => {
+          copyBtn.classList.remove('copied');
+          copyBtn.innerHTML = '⎘ نسخ';
+        }, 2000);
+      }).catch(() => {
+        // Fallback
+        const range = document.createRange();
+        range.selectNode(outputEl);
+        window.getSelection().removeAllRanges();
+        window.getSelection().addRange(range);
+        document.execCommand('copy');
+        window.getSelection().removeAllRanges();
+        showToast('تم النسخ ✓');
+      });
+    });
+
+    /* ================================================================
+       EVENT: Dark mode toggle
+    ================================================================ */
+    function applyTheme(dark) {
+      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+      localStorage.setItem('theme', dark ? 'dark' : 'light');
+    }
+
+    themeBtn.addEventListener('click', () => {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      applyTheme(!isDark);
+    });
+
+    // Load saved theme
+    (function initTheme() {
+      const saved = localStorage.getItem('theme');
+      if (saved === 'dark') {
+        applyTheme(true);
+      } else if (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        applyTheme(true);
+      }
+    })();
+
+    /* ================================================================
+       UTILITY: Show toast notification
+    ================================================================ */
+    let toastTimer = null;
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    /* ================================================================
+       INIT
+    ================================================================ */
+    renderHint();
+    performConversion();
+  </script>
+</body>
+</html>
