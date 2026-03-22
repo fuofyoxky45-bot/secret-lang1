@@ -165,6 +165,51 @@
       margin: 0 auto;
     }
 
+    /* ─── Mode Switcher ─── */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .mode-switcher {
+      display: flex;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 999px;
+      padding: 4px;
+      gap: 4px;
+      transition: background var(--transition), border-color var(--transition);
+    }
+
+    .mode-btn {
+      padding: 8px 20px;
+      border-radius: 999px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: 'Tajawal', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+
+    .mode-btn.active {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(200,71,10,0.3);
+    }
+
+    .mode-btn.active.ar-to-en {
+      background: var(--accent2);
+      box-shadow: 0 2px 10px rgba(42,107,79,0.3);
+    }
+
     /* ─── Detection Badge ─── */
     .detect-badge {
       display: inline-flex;
@@ -175,8 +220,6 @@
       font-size: 0.78rem;
       font-weight: 700;
       letter-spacing: 0.06em;
-      text-transform: uppercase;
-      margin-bottom: 32px;
       transition: all var(--transition);
       border: 1.5px solid transparent;
     }
@@ -547,10 +590,16 @@
   <!-- ─── Main ─── -->
   <main>
 
-    <!-- Detection Badge -->
-    <div class="detect-badge neutral" id="detectBadge">
-      <span class="detect-dot"></span>
-      <span id="detectText">انتظر الكتابة...</span>
+    <!-- Top Bar: Mode Switcher + Badge -->
+    <div class="top-bar">
+      <div class="mode-switcher">
+        <button class="mode-btn active" id="modeEnAr">⌨ إنجليزي ← عربي</button>
+        <button class="mode-btn ar-to-en" id="modeArEn">عربي ← رموز ⌨</button>
+      </div>
+      <div class="detect-badge neutral" id="detectBadge">
+        <span class="detect-dot"></span>
+        <span id="detectText">انتظر الكتابة...</span>
+      </div>
     </div>
 
     <!-- Panels -->
@@ -564,12 +613,12 @@
         <div class="card-header">
           <span class="card-label">
             <span class="card-label-dot dot-input"></span>
-            النص المُدخل
+            <span id="inputLabel">النص المُدخل (إنجليزي)</span>
           </span>
         </div>
         <textarea
           id="inputText"
-          placeholder="اكتب هنا... (مثال: lvdm لتحويلها إلى 'مرحبا')"
+          placeholder="اكتب هنا... (مثال: lvpfh = مرحبا)"
           spellcheck="false"
           autocomplete="off"
           autocorrect="off"
@@ -587,7 +636,7 @@
         <div class="card-header">
           <span class="card-label">
             <span class="card-label-dot dot-output"></span>
-            النتيجة العربية
+            <span id="outputLabel">النتيجة العربية</span>
           </span>
         </div>
         <div class="output-box" id="outputBox">
@@ -621,62 +670,89 @@
   <!-- ─── JavaScript ─── -->
   <script>
     /* ================================================================
-       MAPPING TABLE — QWERTY (English key) → Arabic letter
-       Based on standard Arabic keyboard layout
+       MAPPING: إنجليزي (QWERTY على كيبورد عربي) ← → عربي
     ================================================================ */
-    /*
-      الـ mapping الصح بناءً على لوحة المفاتيح العربية الحقيقية:
-      لما الكيبورد بتاعك بالإنجليزي بس اللغة عربية،
-      كل حرف إنجليزي بيتحول للحرف العربي اللي في نفس المكان.
-    */
-    const AR_MAP = {
-      /* الصف الأول - أرقام */
-      '1': '١', '2': '٢', '3': '٣', '4': '٤', '5': '٥',
-      '6': '٦', '7': '٧', '8': '٨', '9': '٩', '0': '٠',
-      /* الصف الأول - حروف QWERTY */
-      'q': 'ض', 'w': 'ص', 'e': 'ث', 'r': 'ق', 't': 'ف',
-      'y': 'غ', 'u': 'ع', 'i': 'ه', 'o': 'خ', 'p': 'ح',
-      '[': 'ج', ']': 'د', '\\': 'ذ',
-      /* الصف الثاني - حروف ASDF */
-      'a': 'ش', 's': 'س', 'd': 'ي', 'f': 'ب', 'g': 'ل',
-      'h': 'ا', 'j': 'ت', 'k': 'ن', 'l': 'م',
-      ';': 'ك', "'": 'ط',
-      /* الصف الثالث - حروف ZXCV */
-      'z': 'ئ', 'x': 'ء', 'c': 'ؤ', 'v': 'ر', 'b': 'لا',
-      'n': 'ى', 'm': 'ة', ',': 'و', '.': 'ز', '/': 'ظ',
-      /* Shift + أرقام */
-      '!': '!', '@': '@', '#': '#', '$': '$', '%': '%',
-      '^': '^', '&': '&', '*': '*', '(': ')', ')': '(',
-      /* Shift + حروف */
-      'Q': 'َ',  'W': 'ً',  'E': 'ُ',  'R': 'ٌ',  'T': 'لإ',
-      'Y': 'إ',  'U': '`',  'I': '÷',  'O': '×',  'P': '؛',
-      '{': '<',  '}': '>',  '|': '_',
-      'A': 'ِ',  'S': 'ٍ',  'D': ']',  'F': '[',  'G': 'لأ',
-      'H': 'أ',  'J': 'ـ',  'K': '،',  'L': '/',
-      ':': 'ك',  '"': 'ط',
-      'Z': '~',  'X': 'ْ',  'C': '}',  'V': '{',  'B': 'لآ',
-      'N': 'آ',  'M': "'",  '<': ',',  '>': '.',  '?': '؟',
+    const EN_TO_AR = {
+      '1':'١','2':'٢','3':'٣','4':'٤','5':'٥',
+      '6':'٦','7':'٧','8':'٨','9':'٩','0':'٠',
+      'q':'ض','w':'ص','e':'ث','r':'ق','t':'ف',
+      'y':'غ','u':'ع','i':'ه','o':'خ','p':'ح',
+      '[':'ج',']':'د','\\':'ذ',
+      'a':'ش','s':'س','d':'ي','f':'ب','g':'ل',
+      'h':'ا','j':'ت','k':'ن','l':'م',
+      ';':'ك',"'":'ط',
+      'z':'ئ','x':'ء','c':'ؤ','v':'ر','b':'لا',
+      'n':'ى','m':'ة',',':'و','.':'ز','/':'ظ',
+      'Q':'َ','W':'ً','E':'ُ','R':'ٌ','T':'لإ',
+      'Y':'إ','I':'÷','O':'×','P':'؛',
+      'A':'ِ','S':'ٍ','D':']','F':'[','G':'لأ',
+      'H':'أ','J':'ـ','K':'،','L':'/',
+      ':':'ك','"':'ط',
+      'Z':'~','X':'ْ','C':'}','V':'{','B':'لآ',
+      'N':'آ',"M":"'",'<':',','>':'.','?':'؟',
     };
 
+    /* ─── Reverse map: عربي → إنجليزي ─── */
+    const AR_TO_EN = {};
+    for (const [en, ar] of Object.entries(EN_TO_AR)) {
+      // نأخذ أول mapping فقط لو في تكرار (الأحرف الصغيرة تكسب)
+      if (!AR_TO_EN[ar]) AR_TO_EN[ar] = en;
+    }
+    // نضمن إن الأحرف الأساسية صح
+    const BASE_OVERRIDE = {
+      'ض':'q','ص':'w','ث':'e','ق':'r','ف':'t',
+      'غ':'y','ع':'u','ه':'i','خ':'o','ح':'p',
+      'ج':'[','د':']','ذ':'\\',
+      'ش':'a','س':'s','ي':'d','ب':'f','ل':'g',
+      'ا':'h','ت':'j','ن':'k','م':'l',
+      'ك':';','ط':"'",
+      'ئ':'z','ء':'x','ؤ':'c','ر':'v','لا':'b',
+      'ى':'n','ة':'m','و':',','ز':'.','ظ':'/',
+      'إ':'Y','أ':'H','آ':'N','لأ':'G','لإ':'T','لآ':'B',
+      'ـ':'J','،':'K','؟':'?','؛':'P',
+      '١':'1','٢':'2','٣':'3','٤':'4','٥':'5',
+      '٦':'6','٧':'7','٨':'8','٩':'9','٠':'0',
+    };
+    Object.assign(AR_TO_EN, BASE_OVERRIDE);
+
     /* ================================================================
-       UTILITY: Convert English-on-Arabic-keyboard text → Arabic
+       CONVERT FUNCTIONS
     ================================================================ */
-    function convertToArabic(text) {
+    function convertEnToAr(text) {
       return text.split('').map(ch => {
         if (ch === ' ' || ch === '\n' || ch === '\r' || ch === '\t') return ch;
-        return AR_MAP[ch] !== undefined ? AR_MAP[ch] : ch;
+        return EN_TO_AR[ch] !== undefined ? EN_TO_AR[ch] : ch;
       }).join('');
     }
 
+    function convertArToEn(text) {
+      // نعالج الحروف المركبة زي "لا","لأ","لإ","لآ" الأول
+      let result = '';
+      let i = 0;
+      while (i < text.length) {
+        const ch  = text[i];
+        const ch2 = text[i] + (text[i + 1] || '');
+        if (ch === ' ' || ch === '\n' || ch === '\r' || ch === '\t') {
+          result += ch; i++; continue;
+        }
+        // حاول حرفين الأول
+        if (text[i + 1] && AR_TO_EN[ch2] !== undefined) {
+          result += AR_TO_EN[ch2]; i += 2; continue;
+        }
+        result += AR_TO_EN[ch] !== undefined ? AR_TO_EN[ch] : ch;
+        i++;
+      }
+      return result;
+    }
+
     /* ================================================================
-       UTILITY: Detect language of text
-       Returns 'ar', 'en', or 'mixed'
+       DETECT LANGUAGE
     ================================================================ */
     function detectLanguage(text) {
       const stripped = text.replace(/\s+/g, '');
       if (!stripped) return 'none';
-      const arCount  = (text.match(/[\u0600-\u06FF]/g) || []).length;
-      const enCount  = (text.match(/[a-zA-Z]/g) || []).length;
+      const arCount = (text.match(/[\u0600-\u06FF]/g) || []).length;
+      const enCount = (text.match(/[a-zA-Z]/g) || []).length;
       if (arCount === 0 && enCount === 0) return 'none';
       if (arCount > enCount * 1.5) return 'ar';
       if (enCount > arCount * 1.5) return 'en';
@@ -684,98 +760,101 @@
     }
 
     /* ================================================================
-       DOM REFS
+       STATE
     ================================================================ */
-    const inputEl      = document.getElementById('inputText');
-    const outputEl     = document.getElementById('outputBox');
-    const placeholder  = document.getElementById('outputPlaceholder');
-    const convertBtn   = document.getElementById('convertBtn');
-    const clearBtn     = document.getElementById('clearBtn');
-    const copyBtn      = document.getElementById('copyBtn');
-    const themeBtn     = document.getElementById('themeBtn');
-    const inputCount   = document.getElementById('inputCount');
-    const outputCount  = document.getElementById('outputCount');
-    const detectBadge  = document.getElementById('detectBadge');
-    const detectText   = document.getElementById('detectText');
-    const toast        = document.getElementById('toast');
-    const hintGrid     = document.getElementById('hintGrid');
+    let currentMode = 'en-ar'; // 'en-ar' | 'ar-en'
 
     /* ================================================================
-       RENDER KEYBOARD HINT
+       DOM REFS
     ================================================================ */
-    function renderHint() {
-      const pairs = [
-        ['q','ض'],['w','ص'],['e','ث'],['r','ق'],['t','ف'],
-        ['y','غ'],['u','ع'],['i','ه'],['o','خ'],['p','ح'],
-        ['a','ش'],['s','س'],['d','ي'],['f','ب'],['g','ل'],
-        ['h','ا'],['j','ت'],['k','ن'],['l','م'],[';','ك'],
-        ["'",'ط'],['z','ئ'],['x','ء'],['c','ؤ'],['v','ر'],
-        ['b','لا'],['n','ى'],['m','ة'],[',','و'],['.','ز'],
-        ['/','ظ'],['[','ج'],[']','د'],['\\','ذ'],
-      ];
-      hintGrid.innerHTML = pairs.map(([en, ar]) =>
-        `<div class="hint-key">
-          <span class="en-key">${en}</span>
-          <span class="arrow">→</span>
-          <span class="ar-key">${ar}</span>
-        </div>`
-      ).join('');
+    const inputEl     = document.getElementById('inputText');
+    const outputEl    = document.getElementById('outputBox');
+    const convertBtn  = document.getElementById('convertBtn');
+    const clearBtn    = document.getElementById('clearBtn');
+    const copyBtn     = document.getElementById('copyBtn');
+    const themeBtn    = document.getElementById('themeBtn');
+    const inputCount  = document.getElementById('inputCount');
+    const outputCount = document.getElementById('outputCount');
+    const detectBadge = document.getElementById('detectBadge');
+    const detectText  = document.getElementById('detectText');
+    const toast       = document.getElementById('toast');
+    const hintGrid    = document.getElementById('hintGrid');
+    const modeEnAr    = document.getElementById('modeEnAr');
+    const modeArEn    = document.getElementById('modeArEn');
+    const inputLabel  = document.getElementById('inputLabel');
+    const outputLabel = document.getElementById('outputLabel');
+
+    /* ================================================================
+       MODE SWITCH
+    ================================================================ */
+    function setMode(mode) {
+      currentMode = mode;
+      if (mode === 'en-ar') {
+        modeEnAr.classList.add('active');
+        modeEnAr.classList.remove('ar-to-en');
+        modeArEn.classList.remove('active');
+        inputEl.dir         = 'ltr';
+        inputEl.placeholder = 'اكتب هنا... (مثال: lvpfh = مرحبا)';
+        inputLabel.textContent  = 'النص المُدخل (إنجليزي)';
+        outputLabel.textContent = 'النتيجة العربية';
+      } else {
+        modeArEn.classList.add('active');
+        modeEnAr.classList.remove('active');
+        inputEl.dir         = 'rtl';
+        inputEl.placeholder = 'اكتب هنا... (مثال: مرحبا = lvpfh)';
+        inputLabel.textContent  = 'النص المُدخل (عربي)';
+        outputLabel.textContent = 'النتيجة (رموز الكيبورد)';
+      }
+      inputEl.value = '';
+      performConversion();
     }
+
+    modeEnAr.addEventListener('click', () => setMode('en-ar'));
+    modeArEn.addEventListener('click', () => setMode('ar-en'));
 
     /* ================================================================
        CORE: Perform conversion and update UI
     ================================================================ */
     function performConversion() {
-      const raw    = inputEl.value;
-      const lang   = detectLanguage(raw);
-      const result = convertToArabic(raw);
+      const raw  = inputEl.value;
+      const lang = detectLanguage(raw);
+      const result = currentMode === 'en-ar'
+        ? convertEnToAr(raw)
+        : convertArToEn(raw);
 
-      // Update detection badge
+      // Detection badge
       detectBadge.className = 'detect-badge';
-      if (lang === 'en') {
-        detectBadge.classList.add('en');
-        detectText.textContent = 'نص إنجليزي (على أساس كيبورد عربي) — جاري التحويل';
-      } else if (lang === 'ar') {
-        detectBadge.classList.add('ar');
-        detectText.textContent = 'نص عربي مكتوب بشكل صحيح بالفعل ✓';
-      } else if (lang === 'mixed') {
-        detectBadge.classList.add('en');
-        detectText.textContent = 'نص مختلط — جاري التحويل';
-      } else {
+      if (!raw.trim()) {
         detectBadge.classList.add('neutral');
         detectText.textContent = 'انتظر الكتابة...';
+      } else if (currentMode === 'en-ar') {
+        detectBadge.classList.add('en');
+        detectText.textContent = 'وضع: إنجليزي ← عربي ✓';
+      } else {
+        detectBadge.classList.add('ar');
+        detectText.textContent = 'وضع: عربي ← رموز الكيبورد ✓';
       }
 
-      // Update char counts
       inputCount.textContent  = `${raw.length} حرف`;
       outputCount.textContent = `${result.length} حرف`;
 
-      // Update output
       if (!raw.trim()) {
         outputEl.innerHTML = '<span class="output-placeholder">النتيجة ستظهر هنا...</span>';
+        // اتجاه الـ output حسب الـ mode
+        outputEl.dir = currentMode === 'en-ar' ? 'rtl' : 'ltr';
       } else {
-        // Escape HTML to prevent injection, then set
         const safe = result
           .replace(/&/g,'&amp;')
           .replace(/</g,'&lt;')
           .replace(/>/g,'&gt;');
         outputEl.innerHTML = safe;
+        outputEl.dir = currentMode === 'en-ar' ? 'rtl' : 'ltr';
       }
     }
 
-    /* ================================================================
-       EVENT: Live conversion on input
-    ================================================================ */
     inputEl.addEventListener('input', performConversion);
-
-    /* ================================================================
-       EVENT: Convert button (manual trigger)
-    ================================================================ */
     convertBtn.addEventListener('click', performConversion);
 
-    /* ================================================================
-       EVENT: Clear button
-    ================================================================ */
     clearBtn.addEventListener('click', () => {
       inputEl.value = '';
       performConversion();
@@ -783,9 +862,6 @@
       showToast('تم المسح ✓');
     });
 
-    /* ================================================================
-       EVENT: Copy button
-    ================================================================ */
     copyBtn.addEventListener('click', () => {
       const text = outputEl.textContent;
       if (!text || outputEl.querySelector('.output-placeholder')) {
@@ -801,7 +877,6 @@
           copyBtn.innerHTML = '⎘ نسخ';
         }, 2000);
       }).catch(() => {
-        // Fallback
         const range = document.createRange();
         range.selectNode(outputEl);
         window.getSelection().removeAllRanges();
@@ -813,7 +888,7 @@
     });
 
     /* ================================================================
-       EVENT: Dark mode toggle
+       DARK MODE
     ================================================================ */
     function applyTheme(dark) {
       document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
@@ -825,18 +900,14 @@
       applyTheme(!isDark);
     });
 
-    // Load saved theme
     (function initTheme() {
       const saved = localStorage.getItem('theme');
-      if (saved === 'dark') {
-        applyTheme(true);
-      } else if (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        applyTheme(true);
-      }
+      if (saved === 'dark') applyTheme(true);
+      else if (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches) applyTheme(true);
     })();
 
     /* ================================================================
-       UTILITY: Show toast notification
+       TOAST
     ================================================================ */
     let toastTimer = null;
     function showToast(msg) {
@@ -844,6 +915,28 @@
       toast.classList.add('show');
       clearTimeout(toastTimer);
       toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    /* ================================================================
+       KEYBOARD HINT
+    ================================================================ */
+    function renderHint() {
+      const pairs = [
+        ['q','ض'],['w','ص'],['e','ث'],['r','ق'],['t','ف'],
+        ['y','غ'],['u','ع'],['i','ه'],['o','خ'],['p','ح'],
+        ['a','ش'],['s','س'],['d','ي'],['f','ب'],['g','ل'],
+        ['h','ا'],['j','ت'],['k','ن'],['l','م'],[';','ك'],
+        ["'",'ط'],['z','ئ'],['x','ء'],['c','ؤ'],['v','ر'],
+        ['b','لا'],['n','ى'],['m','ة'],[',','و'],['.','ز'],
+        ['/','ظ'],['[','ج'],[']','د'],['\\','ذ'],
+      ];
+      hintGrid.innerHTML = pairs.map(([en, ar]) =>
+        `<div class="hint-key">
+          <span class="en-key">${en}</span>
+          <span class="arrow">⇄</span>
+          <span class="ar-key">${ar}</span>
+        </div>`
+      ).join('');
     }
 
     /* ================================================================
